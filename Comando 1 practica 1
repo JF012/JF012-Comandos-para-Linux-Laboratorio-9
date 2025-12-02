@@ -1,0 +1,66 @@
+1. Instalación de Webmin
+# 1. Descargar el script de configuración de repositorios
+curl -o setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/setup-repos.sh
+
+# 2. Ejecutar el script (confirma con 'y' cuando pregunte)
+sudo sh setup-repos.sh
+
+# 3. Instalar Webmin
+sudo apt-get install webmin --install-recommends
+
+
+Una vez termine, Webmin estará ejecutándose. Accede desde el navegador de tu Parrot OS entrando a:
+
+URL: https://localhost:10000 (o https://127.0.0.1:10000)
+Usuario/Clave: Usa tu usuario root o tu usuario actual con permisos de sudo.
+
+
+Una vez dentro de la interfaz web, utiliza el menú lateral izquierdo para localizar las herramientas solicitadas.
+
+A. Administración de Usuarios
+Ruta: System > Users and Groups
+
+Crear usuario: Haz clic en "Create a new user". Rellena el Username, Password (selecciona "Normal password") y haz clic en el botón verde Create.​
+
+Eliminar usuario: En la lista de usuarios (pestaña "Local Users"), marca la casilla del usuario que creaste y haz clic en el botón rojo Delete selected en la parte inferior.
+
+B. Gestión de Servicios (SSH)
+Ruta: System > Bootup and Shutdown (o a veces System Services dependiendo del tema)
+
+Acción: Busca el servicio llamado ssh o sshd.
+
+Controlar: Marca la casilla del servicio o haz clic en su nombre. Usa los botones de la parte inferior o superior para Start (Iniciar), Stop (Detener) o Restart (Reiniciar).​
+
+C. Configuración de Red (IP Estática)
+Ruta: Networking > Network Configuration > Network Interfaces
+
+Configurar: Haz clic en tu interfaz activa (ej. eth0 o ens33).
+
+Cambio a estática: Cambia la opción de "DHCP" a "Static configuration". Ingresa la IP Address y Netmask manualmente.
+
+Nota: Ten cuidado si estás conectado por SSH, ya que cambiar la IP puede desconectarte. Si estás en la consola de la VM, no hay problema.​
+
+D. Administración de Software
+Ruta: System > Software Packages
+
+Instalar: Selecciona "Package from APT", escribe el nombre de una herramienta (ej. htop o nmap) y pulsa Install.
+
+Eliminar: Busca un paquete instalado usando el buscador superior o la lista, haz clic en él y presiona Uninstall.​
+
+Actualizar: Generalmente verás un aviso en el Dashboard principal si hay actualizaciones, o puedes ir a la sección "Upgrade Packages" dentro de este mismo menú.
+
+E. Gestión de Archivos
+Ruta: Tools > File Manager
+
+Explorar: Navega por las carpetas haciendo doble clic (similar a Windows).
+
+Editar: Haz clic derecho sobre un archivo de texto (o selecciona y usa el menú superior) y elige Edit. Se abrirá un editor de texto en el navegador; modifica y guarda con el icono de disquete.
+
+Eliminar: Selecciona el archivo, haz clic derecho y elige Delete.​
+
+F. Monitorización del Sistema
+Ruta: Dashboard (la página de inicio por defecto)
+
+Visualizar: Nada más entrar, verás gráficos en tiempo real ("Real-time Monitoring") que muestran el uso de CPU, Real memory (RAM) y Local disk space (Almacenamiento).​
+
+Histórico: Para más detalles, puedes ir a System > System Status.
