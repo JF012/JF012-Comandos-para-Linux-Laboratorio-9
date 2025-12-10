@@ -1,0 +1,91 @@
+1. Preparación en Windows (ansible2)
+Abrir PowerShell como Administrador y ejecutar este bloque para habilitar WinRM:
+
+powershell
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$url = "https://raw.githubusercontent.com/ansible/ansible-documentation/devel/examples/scripts/ConfigureRemotingForAnsible.ps1"
+$file = "$env:temp\ConfigureRemotingForAnsible.ps1"
+(New-Object -TypeName System.Net.WebClient).DownloadFile($url, $file)
+powershell.exe -ExecutionPolicy ByPass -File $file
+(También verificamos el usuario real con whoami).
+
+2. Preparación en Parrot (Control Node)
+Instalar dependencias necesarias:
+
+bash
+sudo apt update
+sudo apt install python3-winrm sshpass
+3. Configuración del Inventario (hosts)
+Archivo: hosts (creado con nano hosts)
+Nota: Usamos el usuario ansible en Windows porque era el correcto en tu máquina.
+
+text
+[windows]
+ansible2 ansible_host=192.168.0.27
+
+[windows:vars]
+ansible_user=ansible
+ansible_password=parrot123
+ansible_connection=winrm
+ansible_port=5986
+ansible_winrm_server_cert_validation=ignore
+
+[linux]
+ansible1 ansible_host=192.168.0.23 ansible_user=root ansible_password=parrot
+4. Misión 1: Windows (Instalar Notepad++)
+A. Prueba de conexión:
+
+bash
+ansible windows -i hosts -m win_ping
+B. Crear el Playbook (instalar_notepad.yml):
+
+text
+---
+- name: Instalar Notepad++ en Windows
+  hosts: ansible2
+  gather_facts: yes
+
+  tasks:
+    - name: Instalar Notepad++ usando Chocolatey
+      win_chocolatey:
+        name: notepadplusplus
+        state: present
+C. Ejecutar la misión:
+
+bash
+ansible-playbook -i hosts instalar_notepad.yml
+5. Misión 2: Linux (Instalar NGINX)
+A. Prueba de conexión:
+
+bash
+# Usamos esta variable para saltar la pregunta de "yes/no" del SSH
+ANSIBLE_HOST_KEY_CHECKING=False ansible linux -i hosts -m ping
+B. Crear el Playbook (instalar_nginx.yml):
+
+text
+---
+- name: Instalar y configurar NGINX
+  hosts: ansible1
+  become: yes
+
+  tasks:
+    - name: Instalar NGINX
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Iniciar servicio NGINX
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+C. Ejecutar la misión:
+
+bash
+ansible-playbook -i hosts instalar_nginx.yml
+6. El "Toque Final" (Bonus)
+Comando Ad-Hoc para modificar la página web y demostrar dominio total:
+
+bash
+ansible ansible1 -i hosts -become -m copy -a "content='<h1>HOLA JOSE - NGINX INSTALADO CON ANSIBLE</h1>' dest=/var/www/html/index.html"
