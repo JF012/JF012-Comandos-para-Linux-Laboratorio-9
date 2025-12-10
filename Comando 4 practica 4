@@ -1,0 +1,55 @@
+1. En Windows (PowerShell como Administrador)
+Estos comandos prepararon el terreno, arreglaron los permisos, simplificaron la contraseña y crearon el archivo necesario.
+
+powershell
+# 1. Cambiar contraseña (quitando el signo '!' que daba problemas)
+net user ansible parrot123
+
+# 2. Crear el archivo de prueba (porque no existía)
+New-Item -Path "C:\Users\ansible\Desktop\archivo.txt" -ItemType File -Value "Hola Ansible"
+
+# 3. Configurar WinRM para permitir conexión Básica y Sin Encriptar (Solución definitiva)
+winrm quickconfig -q
+winrm set winrm/config/service/auth '@{Basic="true"}'
+winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+winrm set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}'
+
+# 4. Abrir el Firewall (Puerto 5985)
+New-NetFirewallRule -Name "WinRM_HTTP" -DisplayName "WinRM HTTP" -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 5985
+
+# 5. Permitir que el usuario local sea Administrador remoto (Registro)
+New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "LocalAccountTokenFilterPolicy" -Value 1 -PropertyType DWORD -Force
+
+# 6. Reiniciar servicio para aplicar cambios
+Restart-Service WinRM
+2. En Parrot OS (Configuración de Ansible)
+Configuramos el inventario para coincidir con la nueva contraseña y el método de conexión "Basic/HTTP".
+
+Editar el archivo:
+
+bash
+sudo nano /etc/ansible/hosts
+Contenido del archivo:
+
+text
+[ansible1]
+142.93.6.20 ansible_user=ansible
+
+[ansible2]
+192.168.0.27 ansible_user=ansible ansible_password=parrot123 ansible_connection=winrm ansible_winrm_transport=basic ansible_winrm_scheme=http ansible_port=5985 ansible_winrm_server_cert_validation=ignore
+3. Comandos de la Práctica (La Solución Final)
+Estos son los comandos Ad-Hoc que resolvieron el ejercicio.
+
+Prueba de conexión (Opcional):
+
+bash
+ansible ansible2 -m win_ping
+Parte 1: Copiar archivo en Windows (win_copy)
+Nota: Usamos doble barra \\ y quitamos la barra final del destino.
+
+bash
+ansible ansible2 -m win_copy -a 'src="C:\\Users\\ansible\\Desktop\\archivo.txt" dest="C:\\Users\\ansible\\Documents" remote_src=yes'
+Parte 2: Reiniciar la VM Linux (reboot)
+
+bash
+ansible ansible1 -m reboot --become
