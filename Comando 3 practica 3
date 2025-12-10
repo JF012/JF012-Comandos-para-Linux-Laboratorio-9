@@ -1,0 +1,77 @@
+1. En VM-Server (Parrot OS) - Controlador
+Instalación de Ansible:
+
+bash
+sudo apt update
+sudo apt install ansible sshpass python3-pip -y
+Generación de Llaves SSH:
+
+bash
+ssh-keygen -t rsa -b 4096
+(Se presionó Enter para aceptar valores por defecto)
+
+Copia de Llave al Cliente Linux:
+
+bash
+ssh-copy-id ansible@142.93.6.20
+Creación del Inventario (/etc/ansible/hosts):
+
+bash
+sudo nano /etc/ansible/hosts
+Contenido agregado:
+
+text
+[linux]
+142.93.6.20 ansible_user=ansible
+
+[win]
+192.168.0.27
+
+[win:vars]
+ansible_user=Administrador
+ansible_password=TuClave123!
+ansible_connection=winrm
+ansible_winrm_transport=ntlm
+ansible_winrm_server_cert_validation=ignore
+ansible_port=5985
+ansible_winrm_scheme=http
+Prueba de Conexión (Linux - Exitosa):
+
+bash
+ansible linux -m ping
+2. En Cliente Linux (DigitalOcean)
+Creación de usuario y permisos:
+
+bash
+sudo adduser ansible
+echo "ansible ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/ansible
+Corrección de SSH (para permitir copy-id):
+
+bash
+sudo nano /etc/ssh/sshd_config.d/50-cloud-init.conf
+# Se cambió "PasswordAuthentication no" a "yes"
+sudo systemctl restart ssh
+3. En Cliente Windows (PowerShell Admin)
+Creación de usuario:
+
+powershell
+net user ansible ClaveSegura123! /add
+net localgroup Administradores ansible /add
+Salir del Dominio (Fix del problema Samba):
+
+powershell
+Remove-Computer -WorkgroupName "WORKGROUP" -Force -Restart
+Habilitar WinRM y Autenticación:
+
+powershell
+winrm quickconfig
+winrm set winrm/config/service/auth '@{Basic="true"}'
+winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+Habilitar acceso remoto para usuarios locales (Registro):
+
+powershell
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v LocalAccountTokenFilterPolicy /t REG_DWORD /d 1 /f
+Abrir Firewall:
+
+powershell
+netsh advfirewall firewall add rule name="WinRM 5985" protocol=TCP dir=in localport=5985 action=allow
