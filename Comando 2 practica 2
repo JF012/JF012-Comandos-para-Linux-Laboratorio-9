@@ -1,1 +1,78 @@
 
+Práctica 2: Despliegue de VM en DigitalOcean con Terraform (Informe Final)
+Objetivo
+Desplegar una infraestructura automatizada (VM Droplet) en DigitalOcean usando Terraform desde una estación de trabajo Parrot OS (Debian 12), utilizando autenticación SSH segura.
+
+1. Preparación del Entorno (Parrot OS)
+Debido a la incompatibilidad de nombres en clave de Parrot, se configuró el repositorio forzando la versión "bookworm" de Debian.
+
+Instalación de Terraform:
+
+bash
+# Instalar dependencias y llave GPG oficial de HashiCorp
+sudo apt update && sudo apt install -y gnupg software-properties-common curl
+wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+
+# Agregar repositorio (Corrección para Parrot OS)
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com bookworm main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+
+# Instalar paquete
+sudo apt update && sudo apt install terraform
+2. Configuración del Proyecto (main.tf)
+Se creó el archivo de infraestructura como código (IaC) definiendo el proveedor, la gestión de llaves SSH y el recurso Droplet.
+
+Archivo main.tf utilizado:
+
+text
+terraform {
+  required_providers {
+    digitalocean = {
+      source = "digitalocean/digitalocean"
+      version = "~> 2.0"
+    }
+  }
+}
+
+# Proveedor configurado con Token Personal
+provider "digitalocean" {
+  token = "dop_v1_f45dda435ea02abca19979a6d5642603e4bba12c0ad0161c8f4ae8aa5f3f4ef5"
+}
+
+# Recurso 1: Registro de Llave Pública existente en DigitalOcean
+resource "digitalocean_ssh_key" "ansible_key" {
+  name       = "LlaveAnsibleServer"
+  public_key = file("/home/parrot/.ssh/id_rsa.pub")
+}
+
+# Recurso 2: Servidor Virtual (Droplet)
+resource "digitalocean_droplet" "os3_vm" {
+  image    = "ubuntu-22-04-x64"
+  name     = "OS3vm"
+  region   = "nyc1"
+  size     = "s-1vcpu-1gb"
+  ssh_keys = [digitalocean_ssh_key.ansible_key.fingerprint]
+}
+
+# Salida: IP Pública para conexión
+output "droplet_ip" {
+  value = digitalocean_droplet.os3_vm.ipv4_address
+}
+3. Despliegue (Provisioning)
+Se ejecutaron los comandos del ciclo de vida de Terraform:
+
+terraform init: Inicializó el backend y descargó el plugin digitalocean/digitalocean.
+
+terraform plan: Verificó la sintaxis y mostró el plan de ejecución (creación de 2 recursos).
+
+terraform apply: Aplicó los cambios en la nube real, devolviendo la IP pública del nuevo servidor.
+
+4. Validación y Pruebas
+Se confirmó el éxito del despliegue mediante dos métodos:
+
+Validación Web: Se verificó en el panel cloud.digitalocean.com la existencia del droplet OS3vm en la región NYC1, estado "Active".
+
+Validación SSH: Conexión exitosa desde la terminal Parrot OS sin contraseña (autenticación por llave):
+
+bash
+ssh root@<DIRECCION_IP_GENERADA>
+# Resultado: Acceso concedido al prompt root@OS3vm
